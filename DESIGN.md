@@ -229,6 +229,58 @@
    - Terms of service
    - Licenses
 
+### First-Time Setup / Onboarding
+
+**Purpose**: Guide users through initial app configuration and essential model downloads
+
+**Trigger**: Displayed on first launch or when required language models are not downloaded
+
+**UI Components**:
+- Welcome screen with app introduction
+- Language pair selection (Source → Target)
+- Model download screen with:
+  - Language model size information
+  - Download progress indicator
+  - Wi-Fi/Cellular warning
+  - "Download Now" or "Download Later" options
+- Quick tutorial (3-4 slides)
+  - How to scan documents
+  - How to import from library
+  - How to change languages
+- Permission requests (Camera, Photo Library)
+- "Get Started" button
+
+**User Flow**:
+1. User launches app for the first time
+2. Welcome screen appears with app logo and tagline
+3. Language selection screen:
+   - "Select your primary language pair"
+   - Dropdown for source language (default: auto-detect)
+   - Dropdown for target language (default: English)
+   - Popular pairs suggested (e.g., Spanish↔English, French↔English)
+4. Model download screen:
+   - "Download required models to get started"
+   - Shows selected language pair models
+   - Displays total size (e.g., "60 MB for English + Spanish")
+   - Network warning if on cellular
+   - Download button starts download
+   - Progress bar shows download status
+   - Skip option: "Download Later" (takes user to main app with limited functionality)
+5. Optional tutorial carousel (can be skipped)
+6. Permission requests presented in context
+7. "Get Started" → Navigate to main tab view
+
+**State Management**:
+- `UserDefaults` key: `hasCompletedOnboarding`
+- `UserDefaults` key: `requiredModelsDownloaded`
+- Check on app launch: if either is `false`, show setup flow
+
+**Skip Behavior**:
+- User can skip model download
+- App shows limited functionality message in tabs
+- Prompt to download models when attempting translation
+- "Complete Setup" banner in Settings tab
+
 ### Results View (Modal/Push)
 
 **UI Components**:
@@ -454,13 +506,67 @@ class SettingsViewModel: ObservableObject {
 }
 ```
 
+##### OnboardingViewModel
+```swift
+// ViewModels/OnboardingViewModel.swift
+@MainActor
+class OnboardingViewModel: ObservableObject {
+    @Published var currentStep: OnboardingStep = .welcome
+    @Published var selectedSourceLanguage: Language?
+    @Published var selectedTargetLanguage: Language?
+    @Published var downloadProgress: Double = 0.0
+    @Published var isDownloading = false
+    @Published var error: AppError?
+    @Published var hasCompletedOnboarding = false
+
+    private let languageManager: LanguageManager
+    private let translationService: TranslationServiceProtocol
+
+    func selectLanguagePair(source: Language, target: Language)
+    func downloadRequiredModels() async
+    func skipDownload()
+    func completeOnboarding()
+    func nextStep()
+    func previousStep()
+}
+
+// Models/OnboardingStep.swift
+enum OnboardingStep {
+    case welcome
+    case languageSelection
+    case modelDownload
+    case tutorial
+    case permissions
+    case complete
+}
+```
+
 #### 1.4 Views
 
 ##### Main App Structure
 ```swift
+// TalkLensApp.swift
+@main
+struct TalkLensApp: App {
+    @StateObject private var languageManager = LanguageManager()
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
+    var body: some Scene {
+        WindowGroup {
+            if hasCompletedOnboarding {
+                RootTabView()
+                    .environmentObject(languageManager)
+            } else {
+                OnboardingView()
+                    .environmentObject(languageManager)
+            }
+        }
+    }
+}
+
 // Views/RootTabView.swift
 struct RootTabView: View {
-    @StateObject private var languageManager = LanguageManager()
+    @EnvironmentObject var languageManager: LanguageManager
 
     var body: some View {
         TabView {
@@ -473,7 +579,6 @@ struct RootTabView: View {
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gear") }
         }
-        .environmentObject(languageManager)
     }
 }
 ```
@@ -518,6 +623,62 @@ struct DocumentCard: View {
 // Views/Library/ImageImportSheet.swift
 struct ImageImportSheet: View {
     // Photo/file picker wrapper
+}
+```
+
+##### Onboarding View Components
+```swift
+// Views/Onboarding/OnboardingView.swift
+struct OnboardingView: View {
+    @StateObject private var viewModel: OnboardingViewModel
+    @EnvironmentObject var languageManager: LanguageManager
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
+    var body: some View {
+        // Step-based navigation
+        switch viewModel.currentStep {
+        case .welcome: WelcomeScreen()
+        case .languageSelection: LanguageSelectionScreen()
+        case .modelDownload: ModelDownloadScreen()
+        case .tutorial: TutorialCarousel()
+        case .permissions: PermissionsScreen()
+        case .complete: /* Set hasCompletedOnboarding = true */
+        }
+    }
+}
+
+// Views/Onboarding/WelcomeScreen.swift
+struct WelcomeScreen: View {
+    // App logo, tagline, "Get Started" button
+}
+
+// Views/Onboarding/LanguageSelectionScreen.swift
+struct LanguageSelectionScreen: View {
+    // Source and target language pickers
+    // Popular language pairs suggestions
+    // "Continue" button
+}
+
+// Views/Onboarding/ModelDownloadScreen.swift
+struct ModelDownloadScreen: View {
+    // Model size display
+    // Network type warning (Wi-Fi/Cellular)
+    // Download progress bar
+    // "Download Now" / "Download Later" buttons
+}
+
+// Views/Onboarding/TutorialCarousel.swift
+struct TutorialCarousel: View {
+    // 3-4 tutorial slides with images
+    // Page indicator
+    // "Skip" / "Next" / "Done" buttons
+}
+
+// Views/Onboarding/PermissionsScreen.swift
+struct PermissionsScreen: View {
+    // Camera permission request
+    // Photo library permission request
+    // Explanations for each permission
 }
 ```
 
@@ -828,7 +989,15 @@ Utilities
 - [ ] Create LoadingOverlay with progress
 - [ ] Add haptic feedback
 - [ ] Implement empty states
-- [ ] Add onboarding flow
+- [ ] Create first-time setup flow with model download
+  - [ ] Implement OnboardingViewModel and OnboardingStep model
+  - [ ] Create WelcomeScreen view
+  - [ ] Create LanguageSelectionScreen view
+  - [ ] Create ModelDownloadScreen with progress tracking
+  - [ ] Create TutorialCarousel (3-4 slides)
+  - [ ] Create PermissionsScreen for Camera/Photos access
+  - [ ] Update TalkLensApp to check hasCompletedOnboarding
+  - [ ] Add skip/later functionality for model downloads
 - [ ] Implement app icon and branding
 - [ ] Localize UI strings
 
@@ -836,7 +1005,7 @@ Utilities
 - Polished results view
 - Copy/share functionality
 - Loading states
-- Onboarding
+- Complete first-time setup/onboarding flow with model downloads
 - App icon
 
 **Testing**:
@@ -1135,6 +1304,7 @@ TalkLens/
 │   ├── DocumentPage.swift
 │   ├── Language.swift
 │   ├── ProcessingStatus.swift
+│   ├── OnboardingStep.swift
 │   └── AppSettings.swift
 ├── Services/
 │   ├── OCR/
@@ -1155,9 +1325,17 @@ TalkLens/
 ├── ViewModels/
 │   ├── CameraViewModel.swift
 │   ├── LibraryViewModel.swift
-│   └── SettingsViewModel.swift
+│   ├── SettingsViewModel.swift
+│   └── OnboardingViewModel.swift
 ├── Views/
 │   ├── RootTabView.swift
+│   ├── Onboarding/
+│   │   ├── OnboardingView.swift
+│   │   ├── WelcomeScreen.swift
+│   │   ├── LanguageSelectionScreen.swift
+│   │   ├── ModelDownloadScreen.swift
+│   │   ├── TutorialCarousel.swift
+│   │   └── PermissionsScreen.swift
 │   ├── Camera/
 │   │   ├── CameraView.swift
 │   │   ├── CameraPreviewView.swift
@@ -1195,14 +1373,17 @@ TalkLens/
 | Component | Type | Responsibility |
 |-----------|------|----------------|
 | `Document` | Model | Represents a translated document |
+| `OnboardingStep` | Model | Enum for onboarding flow steps |
 | `OCRServiceProtocol` | Protocol | Text recognition interface |
 | `TranslationServiceProtocol` | Protocol | Translation interface |
 | `CameraServiceProtocol` | Protocol | Camera operations interface |
 | `DocumentProcessor` | Service | Orchestrates OCR + Translation |
 | `LanguageManager` | Service | Manages language state |
+| `OnboardingViewModel` | ViewModel | First-time setup business logic |
 | `CameraViewModel` | ViewModel | Camera tab business logic |
 | `LibraryViewModel` | ViewModel | Library tab business logic |
 | `SettingsViewModel` | ViewModel | Settings tab business logic |
+| `OnboardingView` | View | First-time setup flow container |
 | `RootTabView` | View | Main tab container |
 
 ---
@@ -1216,7 +1397,7 @@ Key strengths of this design:
 2. **Modular**: Clear separation of concerns
 3. **Testable**: Protocol-based design with dependency injection
 4. **Scalable**: Easy to add new languages and features
-5. **User-Friendly**: Intuitive tab-based navigation
+5. **User-Friendly**: Intuitive tab-based navigation with guided onboarding
 
 The 17-week implementation plan balances feature development with quality assurance, ensuring a robust v1.0 release. Future enhancements provide a clear roadmap for continued improvement.
 
