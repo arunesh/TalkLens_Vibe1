@@ -19,7 +19,7 @@ class CameraViewModel: ObservableObject {
     @Published var showResults = false
     @Published var processedDocument: Document?
 
-    private let cameraService: CameraServiceProtocol
+    let cameraService: CameraServiceProtocol // Made public for camera preview access
     private let documentProcessor: DocumentProcessor
     private let languageManager: LanguageManager
     private let storageService: StorageServiceProtocol

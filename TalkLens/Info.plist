@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<string>TalkLens needs access to your camera to scan documents for translation. All processing happens on-device to protect your privacy.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>TalkLens needs access to your photo library to import images for translation. Your photos never leave your device.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>TalkLens can save translated documents to your photo library for easy access.</string>
+</dict>
+</plist>

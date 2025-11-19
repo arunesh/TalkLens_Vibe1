@@ -4,10 +4,17 @@ This document describes the external dependencies required for the TalkLens app 
 
 ## Current Implementation
 
-The app currently uses **mock implementations** for development and testing:
+The app now includes **production implementations** ready for use with MLKit:
+- `MLKitOCRService` / `AdaptiveMLKitOCRService` - Real text recognition with MLKit
+- `MLKitTranslationService` - Real translation with MLKit
+- `AVCameraService` - Real camera functionality with AVFoundation
+
+**Mock implementations** are also available for testing without MLKit:
 - `MockOCRService` - Simulates text recognition
 - `MockTranslationService` - Simulates translation
 - `MockCameraService` - Simulates camera functionality
+
+**Note:** The app is currently configured to use the production services. All views have been updated to use the real implementations.
 
 ## Required Dependencies for Production
 
@@ -50,11 +57,15 @@ Then run:
 pod install
 ```
 
-## Implementing Real Services
+## Production Service Implementations
 
-Once dependencies are added, create production implementations:
+The following production services have been implemented and are ready to use:
 
-### 1. Create MLKitOCRService
+### 1. MLKitOCRService (Implemented)
+
+Location: `TalkLens/Services/OCR/MLKitOCRService.swift`
+
+Two implementations are available:
 
 ```swift
 // Services/OCR/MLKitOCRService.swift
@@ -84,7 +95,16 @@ class MLKitOCRService: OCRServiceProtocol {
 }
 ```
 
-### 2. Create MLKitTranslationService
+### 2. MLKitTranslationService (Implemented)
+
+Location: `TalkLens/Services/Translation/MLKitTranslationService.swift`
+
+Features:
+- Automatic language detection support
+- Model download progress tracking
+- Persistent model management
+- Support for 12+ languages
+- Offline translation once models are downloaded
 
 ```swift
 // Services/Translation/MLKitTranslationService.swift
@@ -136,7 +156,16 @@ class MLKitTranslationService: TranslationServiceProtocol {
 }
 ```
 
-### 3. Create AVCameraService
+### 3. AVCameraService (Implemented)
+
+Location: `TalkLens/Services/Camera/AVCameraService.swift`
+
+Features:
+- High-resolution photo capture
+- Real-time video frames for document detection
+- Flash control
+- Auto-focus and exposure
+- Camera preview with `CameraPreviewRepresentable`
 
 ```swift
 // Services/Camera/AVCameraService.swift
@@ -172,31 +201,33 @@ class AVCameraService: NSObject, CameraServiceProtocol {
 }
 ```
 
-## Updating Dependency Injection
+## Dependency Injection (Already Updated)
 
-Update the view initializers to use real services instead of mocks:
+All views have been updated to use production services:
 
-```swift
-// In CameraView.swift
-init() {
-    let cameraService = AVCameraService()  // Instead of MockCameraService()
-    let ocrService = MLKitOCRService()     // Instead of MockOCRService()
-    let translationService = MLKitTranslationService()  // Instead of MockTranslationService()
-    // ... rest of initialization
-}
-```
+- `CameraView` → Uses `AVCameraService`, `AdaptiveMLKitOCRService`, `MLKitTranslationService`
+- `LibraryView` → Uses `AdaptiveMLKitOCRService`, `MLKitTranslationService`
+- `SettingsView` → Uses `MLKitTranslationService`
+- `TalkLensApp` → Uses `MLKitTranslationService` for LanguageManager
 
-## Privacy Permissions
+To switch back to mock services for testing, simply change the service initialization in each view's `init()` method.
 
-Add the following keys to your `Info.plist`:
+## Privacy Permissions (Already Added)
+
+An `Info.plist` file has been created at `TalkLens/Info.plist` with the following permissions:
 
 ```xml
 <key>NSCameraUsageDescription</key>
-<string>Camera access is required to scan documents for translation</string>
+<string>TalkLens needs access to your camera to scan documents for translation. All processing happens on-device to protect your privacy.</string>
 
 <key>NSPhotoLibraryUsageDescription</key>
-<string>Photo library access is required to import images for translation</string>
+<string>TalkLens needs access to your photo library to import images for translation. Your photos never leave your device.</string>
+
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>TalkLens can save translated documents to your photo library for easy access.</string>
 ```
+
+**Important:** Ensure this Info.plist is added to your Xcode project target.
 
 ## Additional Configuration
 

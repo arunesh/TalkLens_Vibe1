@@ -12,15 +12,16 @@ struct CameraView: View {
     @EnvironmentObject var languageManager: LanguageManager
 
     init() {
-        let cameraService = MockCameraService()
-        let ocrService = MockOCRService()
-        let translationService = MockTranslationService()
+        // Use real production services
+        let cameraService = AVCameraService()
+        let ocrService = AdaptiveMLKitOCRService()
+        let translationService = MLKitTranslationService()
         let documentProcessor = DocumentProcessor(
             ocrService: ocrService,
             translationService: translationService
         )
         let storageService = UserDefaultsStorageService()
-        let languageManager = LanguageManager()
+        let languageManager = LanguageManager(translationService: translationService)
 
         _viewModel = StateObject(wrappedValue: CameraViewModel(
             cameraService: cameraService,
@@ -33,9 +34,14 @@ struct CameraView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Camera Preview Placeholder
-                Color.black
-                    .ignoresSafeArea()
+                // Camera Preview
+                if let cameraService = viewModel.cameraService as? AVCameraService {
+                    CameraPreviewRepresentable(session: cameraService.captureSession)
+                        .ignoresSafeArea()
+                } else {
+                    Color.black
+                        .ignoresSafeArea()
+                }
 
                 VStack {
                     Spacer()

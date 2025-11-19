@@ -9,7 +9,7 @@ import SwiftUI
 
 @main
 struct TalkLensApp: App {
-    @StateObject private var languageManager = LanguageManager()
+    @StateObject private var languageManager = LanguageManager(translationService: MLKitTranslationService())
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some Scene {

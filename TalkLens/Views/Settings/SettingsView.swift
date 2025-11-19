@@ -12,8 +12,8 @@ struct SettingsView: View {
     @EnvironmentObject var languageManager: LanguageManager
 
     init() {
-        let languageManager = LanguageManager()
-        let translationService = MockTranslationService()
+        let translationService = MLKitTranslationService()
+        let languageManager = LanguageManager(translationService: translationService)
         let storageService = UserDefaultsStorageService()
 
         _viewModel = StateObject(wrappedValue: SettingsViewModel(

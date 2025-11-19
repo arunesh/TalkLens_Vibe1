@@ -16,13 +16,13 @@ struct LibraryView: View {
 
     init() {
         let storageService = UserDefaultsStorageService()
-        let ocrService = MockOCRService()
-        let translationService = MockTranslationService()
+        let ocrService = AdaptiveMLKitOCRService()
+        let translationService = MLKitTranslationService()
         let documentProcessor = DocumentProcessor(
             ocrService: ocrService,
             translationService: translationService
         )
-        let languageManager = LanguageManager()
+        let languageManager = LanguageManager(translationService: translationService)
 
         _viewModel = StateObject(wrappedValue: LibraryViewModel(
             storageService: storageService,
