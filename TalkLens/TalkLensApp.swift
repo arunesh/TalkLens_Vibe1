@@ -9,9 +9,18 @@ import SwiftUI
 
 @main
 struct TalkLensApp: App {
+    @StateObject private var languageManager = LanguageManager()
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if hasCompletedOnboarding {
+                RootTabView()
+                    .environmentObject(languageManager)
+            } else {
+                OnboardingView(languageManager: languageManager)
+                    .environmentObject(languageManager)
+            }
         }
     }
 }
